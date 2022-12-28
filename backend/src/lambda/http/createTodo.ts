@@ -1,4 +1,4 @@
-import { createTodo } from './../../helpers/todos';
+import { createTodo } from '../../bus/todos';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda'
 import 'source-map-support/register'
 import * as middy from 'middy'

@@ -1,4 +1,4 @@
-import { TodosAccess } from './todosAcess'
+import { TodosAccess } from '../dao/todosAcess'
 import { TodoItem } from '../models/TodoItem'
 import { CreateTodoRequest } from '../requests/CreateTodoRequest'
 import { createLogger } from '../utils/logger'

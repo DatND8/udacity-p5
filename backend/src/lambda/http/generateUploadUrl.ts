@@ -4,7 +4,7 @@ import * as middy from 'middy'
 import * as uuid from 'uuid'
 import { cors, httpErrorHandler } from 'middy/middlewares'
 import { getUploadUrl } from '../../helpers/attachmentUtils'
-import { createAttachmentPresignedUrl } from '../../helpers/todos'
+import { createAttachmentPresignedUrl } from '../../bus/todos'
 
 // import { getUserId } from '../utils'
 const bucketName = process.env.ATTACHMENT_S3_BUCKET

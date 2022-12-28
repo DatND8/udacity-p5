@@ -1,11 +1,11 @@
+import { History } from 'history';
 import React from "react";
-import { Button, Container, Divider, Form, Grid, Header, Image, Modal } from "semantic-ui-react";
+import { Button, Container, Divider, Form, Grid, Header, Icon, Image, Modal } from "semantic-ui-react";
+import { createRecord, deleteRecord, getRecords, patchRecord } from "../api/records-api";
+import { uploadFile } from "../api/todos-api";
 import Auth from "../auth/Auth";
 import { CreateRecordRequest, RecordItem } from "../types/Record";
-import { History } from 'history'
 import { UploadState } from "./EditTodo";
-import { getUploadUrl, uploadFile } from "../api/todos-api";
-import { createRecord, getRecords } from "../api/records-api";
 
 interface RecordsProps {
     auth: Auth
@@ -14,11 +14,17 @@ interface RecordsProps {
 
 interface RecordsState {
     records: RecordItem[]
+    updateState: {
+        title: string,
+        description: string
+    },
     newRecordTitle: string,
     newRecordDescription: string,
     loadingRecords: boolean,
     addRecordModalOpen: boolean,
     uploadState: UploadState,
+    updateRecordModalOpen: boolean,
+    updatedRecordId: string,
     file: any
 }
 
@@ -28,7 +34,13 @@ export class Records extends React.PureComponent<RecordsProps, RecordsState> {
         newRecordTitle: '',
         newRecordDescription: '',
         loadingRecords: false,
+        updateState: {
+            title: '',
+            description: '',
+        },
         addRecordModalOpen: false,
+        updateRecordModalOpen: false,
+        updatedRecordId: '',
         uploadState: UploadState.NoUpload,
         file: undefined
     }
@@ -43,6 +55,13 @@ export class Records extends React.PureComponent<RecordsProps, RecordsState> {
     setOpen = (isOpen: boolean) => {
         this.setState({
             addRecordModalOpen: isOpen
+        })
+    }
+
+    setOpenUpdate = (isOpen: boolean, updatedRecordId: string = '') => {
+        this.setState({
+            updateRecordModalOpen: isOpen,
+            updatedRecordId
         })
     }
 
@@ -101,10 +120,39 @@ export class Records extends React.PureComponent<RecordsProps, RecordsState> {
         })
     }
 
+    handleTitleUpdateChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        this.setState({
+            updateState: {
+                ...this.state.updateState,
+                title: event.target.value
+            }
+        })
+    }
+
+    handleDescriptionUpdateChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        this.setState({
+            updateState: {
+                ...this.state.updateState,
+                description: event.target.value
+            }
+        })
+    }
+
     handleDescriptionChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         this.setState({
             newRecordDescription: event.target.value
         })
+    }
+
+    deleteRecord = async (recordId: string) => {
+        try {
+            await deleteRecord(this.props.auth.getIdToken(), recordId)
+            this.setState({
+                records: this.state.records.filter(r => r.recordId !== recordId)
+            })
+        } catch (error) {
+            alert(`Delete record error: ${error}`)
+        }
     }
 
     renderRecords = () => {
@@ -114,6 +162,24 @@ export class Records extends React.PureComponent<RecordsProps, RecordsState> {
                     <React.Fragment key={r.recordId}>
                         <Grid.Row centered >
                             <Header as="h3">{r.title}</Header>
+                            <Grid.Column width={2} floated="right">
+                                <Grid.Row>
+                                    <Button
+                                        icon
+                                        color="blue"
+                                        onClick={() => this.setOpenUpdate(true, r.recordId)}
+                                    >
+                                        <Icon name="pencil" />
+                                    </Button>
+                                    <Button
+                                        icon
+                                        color="red"
+                                        onClick={() => this.deleteRecord(r.recordId)}
+                                    >
+                                        <Icon name="delete" />
+                                    </Button>
+                                </Grid.Row>
+                            </Grid.Column>
                         </Grid.Row>
                         <Grid.Row>
                             <Image src={r.attachmentUrl} size="small" wrapped />
@@ -130,6 +196,48 @@ export class Records extends React.PureComponent<RecordsProps, RecordsState> {
         }
         else {
             return <React.Fragment></React.Fragment>
+        }
+    }
+
+    handleUpdate = async (e: any) => {
+        try {
+            const recordToUpdate = this.state.records.find(r => r.recordId === this.state.updatedRecordId)
+
+            let description = this.state.updateState.description
+            let title = this.state.updateState.title
+
+            if (!description && recordToUpdate) {
+                description = recordToUpdate.description
+            }
+
+            if (!title && recordToUpdate) {
+                title = recordToUpdate.title
+            }
+
+            const params: CreateRecordRequest = {
+                title,
+                description
+            }
+
+            const response = await patchRecord(this.props.auth.getIdToken(), this.state.updatedRecordId, params)
+
+            this.setState({
+                records: this.state.records.map(r => {
+                    if (r.recordId === this.state.updatedRecordId) {
+                        r = {
+                            ...r,
+                            title: response.title,
+                            description: response.description
+                        }
+                    }
+                    return r
+                })
+            })
+        } catch (error) {
+            alert(`Update error: ${error}`)
+        }
+        finally {
+            this.setOpenUpdate(false)
         }
     }
 
@@ -178,6 +286,43 @@ export class Records extends React.PureComponent<RecordsProps, RecordsState> {
                         </Modal.Content>
                         <Modal.Actions>
                             {this.renderButton()}
+                        </Modal.Actions>
+                    </Modal>
+
+                    <Modal
+                        onClose={() => this.setOpenUpdate(false)}
+                        onOpen={() => this.setOpenUpdate(true)}
+                        open={this.state.updateRecordModalOpen}
+                    >
+                        <Modal.Header>Update Record</Modal.Header>
+                        <Modal.Content>
+                            <Form onSubmit={this.handleSubmit}>
+                                <Form.Field>
+                                    <label>Title</label>
+                                    <input
+                                        type="text"
+                                        placeholder="Title"
+                                        onChange={this.handleTitleUpdateChange}
+                                    />
+                                </Form.Field>
+
+                                <Form.Field>
+                                    <label>Description</label>
+                                    <input
+                                        type="text"
+                                        placeholder="Description"
+                                        onChange={this.handleDescriptionUpdateChange}
+                                    />
+                                </Form.Field>
+                            </Form>
+                        </Modal.Content>
+                        <Modal.Actions>
+                            <Button
+                                primary
+                                onClick={(e) => this.handleUpdate(e)}
+                            >
+                                Upload
+                            </Button>
                         </Modal.Actions>
                     </Modal>
                 </Grid.Row>

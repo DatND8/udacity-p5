@@ -4,7 +4,7 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda'
 import * as middy from 'middy'
 import { cors } from 'middy/middlewares'
 
-import { getAllRecords } from '../../../helpers/records'
+import { getAllRecords } from '../../../bus/records'
 
 // TODO: Get all TODO items for a current user
 export const handler = middy(

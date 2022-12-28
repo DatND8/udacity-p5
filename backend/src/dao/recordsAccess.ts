@@ -1,3 +1,4 @@
+import { UpdateRecordRequest } from './../requests/UpdateRecordRequest';
 import * as AWS from 'aws-sdk'
 import { DocumentClient } from 'aws-sdk/clients/dynamodb'
 import * as AWSXRay from 'aws-xray-sdk'
@@ -57,6 +58,38 @@ export class RecordsAccess {
         } catch (error) {
             logger.error('Error create record: ', error)
         }
+    }
+
+    async updateRecord(recordId: string, userId: string, record: UpdateRecordRequest) {
+        logger.info(`Updating a record with id: ${recordId}`)
+        try {
+            await this.docClient.update({
+                TableName: this.recordsTable,
+                Key: {
+                    userId,
+                    recordId
+                },
+                UpdateExpression: 'set title = :title, description = :description',
+                ExpressionAttributeValues: {
+                    ':title': record.title,
+                    ':description': record.description,
+                },
+            }).promise();
+
+        } catch (error) {
+            logger.error('Error update record: ', error)
+        }
+    }
+
+    async deleteRecord(userId: string, recordId: string) {
+        logger.info(`Deleting a record with id: ${recordId}`)
+        await this.docClient.delete({
+            TableName: this.recordsTable,
+            Key: {
+                userId,
+                recordId
+            }
+        }).promise()
     }
 
 }

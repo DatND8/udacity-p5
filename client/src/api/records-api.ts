@@ -28,3 +28,29 @@ export async function createRecord(idToken: string, params: CreateRecordRequest)
     })
     return response.data
 }
+
+export async function patchRecord(
+    idToken: string,
+    recordId: string,
+    updatedReCordRequest: CreateRecordRequest
+): Promise<{ title: string, description: string }> {
+    const response = await Axios.patch(`${apiEndpoint}/records/${recordId}`, JSON.stringify(updatedReCordRequest), {
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${idToken}`
+        }
+    })
+    return response.data
+}
+
+export async function deleteRecord(
+    idToken: string,
+    recordId: string
+): Promise<void> {
+    await Axios.delete(`${apiEndpoint}/records/${recordId}`, {
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${idToken}`
+        }
+    })
+}

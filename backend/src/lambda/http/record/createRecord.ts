@@ -1,4 +1,4 @@
-import { createRecords } from './../../../helpers/records';
+import { createRecords } from '../../../bus/records';
 import { CreateRecordRequest } from './../../../requests/CreateRecordRequest';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda'
 import 'source-map-support/register'
